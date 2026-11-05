@@ -91,6 +91,9 @@ jobs:
         run: |
           npm install
           npx cap add android
+          mkdir -p assets
+          cp www/icon.svg assets/icon.svg
+          npx --yes @capacitor/assets@4.0.0 generate --android --iconBackgroundColor '#0a0d14'
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           PERMISSIONS="<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />\n    <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />"
           sed -i "s|</manifest>|    $PERMISSIONS\n</manifest>|" "$MANIFEST_PATH"
