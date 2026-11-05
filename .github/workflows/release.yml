@@ -62,6 +62,18 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check Google Play upload configuration
+        id: google-play
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [[ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Google Play upload skipped. Configure GOOGLE_PLAY_SERVICE_ACCOUNT_JSON after creating the app in Play Console."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Java
         if: steps.android-signing.outputs.available == 'true'
         uses: actions/setup-java@v4
@@ -69,7 +81,7 @@ jobs:
           distribution: zulu
           java-version: '21'
 
-      - name: Build signed Android APK
+      - name: Build signed Android APK and App Bundle
         if: steps.android-signing.outputs.available == 'true'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -90,12 +102,28 @@ jobs:
           export ANDROID_VERSION_NAME="${GITHUB_REF_NAME#v}"
           cd android
           chmod +x gradlew
-          ./gradlew -I ../scripts/release-signing.gradle assembleRelease
+          ./gradlew -I ../scripts/release-signing.gradle assembleRelease bundleRelease
           mkdir -p ../release
           cp app/build/outputs/apk/release/app-release.apk ../release/FleetTrackPro-Android.apk
+          cp app/build/outputs/bundle/release/app-release.aab ../release/FleetTrackPro-Android.aab
 
       - name: Attach signed Android APK to GitHub Release
         if: steps.android-signing.outputs.available == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" release/FleetTrackPro-Android.apk --clobber
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            release/FleetTrackPro-Android.apk \
+            release/FleetTrackPro-Android.aab \
+            --clobber
+
+      - name: Upload App Bundle to Google Play internal testing
+        if: steps.android-signing.outputs.available == 'true' && steps.google-play.outputs.available == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.axium.mileage
+          releaseFiles: release/FleetTrackPro-Android.aab
+          tracks: internal
+          status: completed
+          releaseName: ${{ github.event.release.name }}

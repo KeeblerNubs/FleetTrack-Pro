@@ -1,13 +1,14 @@
 # FleetTrack Pro - Android App and Installable PWA
 
-This project provides an Android APK and a PWA for Android and iOS users. The PWA is distributed through GitHub Pages; native iOS store packaging is not configured.
+This project provides an Android APK, a PWA for Android and iOS users, and optional store release workflows. Android App Bundles can be sent to Google Play internal testing, and signed iOS builds can be uploaded to TestFlight when store credentials are configured. Public store launches still require console setup and review.
 
 ## Contents:
 1. `www/index.html` - The complete mobile-first HTML/PWA app with GPS live tracking, manual entry, and direct admin export.
 2. `.github/workflows/build.yml` - GitHub Actions workflow for an Android APK.
 3. `.github/workflows/deploy-pwa.yml` - GitHub Actions workflow for publishing the PWA to GitHub Pages.
-4. `.github/workflows/release.yml` - GitHub Release assets for the PWA and signed Android APK.
-5. `package.json` & `capacitor.config.json` - Capacitor project configuration files.
+4. `.github/workflows/release.yml` - GitHub Release assets, signed Android APK/App Bundle, and optional Google Play internal upload.
+5. `.github/workflows/ios-release.yml` - Signed iOS archive, TestFlight upload, and IPA release asset.
+6. `package.json` & `capacitor.config.json` - Capacitor project configuration files.
 
 ## Quick Start (GitHub Actions Cloud Build):
 1. Create a new private/public repository on GitHub.
@@ -29,7 +30,7 @@ Each repository update is deployed automatically; users receive it the next time
 
 ## GitHub Releases
 
-Publishing a GitHub Release attaches `FleetTrackPro-PWA.zip`. A signed Android APK is also attached when all four Android signing secrets are configured in repository Actions settings: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The PWA asset publishes even when the APK signing secrets are absent.
+Publishing a GitHub Release attaches `FleetTrackPro-PWA.zip`. A signed Android APK and App Bundle are also attached when all four Android signing secrets are configured in repository Actions settings: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The PWA asset publishes even when the APK signing secrets are absent.
 
 Create an Android keystore once with the JDK's `keytool`, then store the file and its credentials as the four repository Actions secrets above. Keep the keystore and passwords safe; the same key is required for every APK update.
 
@@ -44,5 +45,13 @@ On Windows, encode the keystore for `ANDROID_KEYSTORE_BASE64` with:
 ```
 
 Use the same keystore for every release so users can install APK updates without uninstalling the previous version. Never commit the keystore or its passwords to the repository.
+
+## Official Store Releases
+
+For Google Play, create the app in Play Console with application ID `com.axium.mileage`, enable the Google Play Android Developer API, and configure the service account with access to that app. Add the service account JSON as the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` Actions secret. On a published GitHub Release, the workflow uploads the signed App Bundle to the **internal testing** track; promote it and submit it for public review from Play Console when ready.
+
+For Apple, create the app record with bundle ID `com.axium.mileage` and configure an Apple Distribution certificate, an App Store provisioning profile, and an App Store Connect API key. Add these Actions secrets: `IOS_DISTRIBUTION_CERTIFICATE_BASE64`, `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `IOS_TEAM_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, and `APP_STORE_CONNECT_PRIVATE_KEY`. The workflow uploads the IPA to TestFlight and attaches it to the GitHub Release; complete the App Store listing and submit the build for App Review in App Store Connect.
+
+Use a new semantic version tag for each store release, such as `v2.0.1`. Existing release tags such as `Release2` are not valid store version tags. Before submitting either store listing, provide the required privacy policy, support contact, screenshots, and store disclosures. The app uses foreground location and stores trip/profile data in browser/app local storage, so review those disclosures for accuracy.
 
 
