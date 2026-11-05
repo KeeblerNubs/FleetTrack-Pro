@@ -183,15 +183,10 @@
           <input type="email" id="adminEmail" onchange="saveAdminSettings()" placeholder="payroll@company.com"
             class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm outline-none">
         </div>
-        <div class="grid grid-cols-2 gap-2">
+        <div>
           <div>
             <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Employee Name</label>
             <input type="text" id="employeeName" onchange="saveAdminSettings()" placeholder="John Doe"
-              class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Rate ($/mi)</label>
-            <input type="number" step="0.01" id="reimbursementRate" value="0.67" onchange="saveAdminSettings()"
               class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm outline-none">
           </div>
         </div>
@@ -213,14 +208,10 @@
         </div>
 
         <!-- Summary Totals -->
-        <div class="grid grid-cols-2 gap-3 pt-2">
+        <div class="pt-2">
           <div class="bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
             <div id="summaryTotalMiles" class="text-xl font-bold text-indigo-600 dark:text-indigo-400">0.0</div>
             <div class="text-xs text-gray-500">Total Miles</div>
-          </div>
-          <div class="bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-200 dark:border-gray-700 text-center">
-            <div id="summaryTotalPayout" class="text-xl font-bold text-emerald-600 dark:text-emerald-400">$0.00</div>
-            <div class="text-xs text-gray-500">Est. Reimbursement</div>
           </div>
         </div>
 
@@ -256,7 +247,7 @@
   <!-- Application Logic -->
   <script>
     let trips = JSON.parse(localStorage.getItem('company_trips') || '[]');
-    let adminSettings = JSON.parse(localStorage.getItem('admin_settings') || '{"adminEmail":"","employeeName":"","rate":0.67}');
+    let adminSettings = JSON.parse(localStorage.getItem('admin_settings') || '{"adminEmail":"","employeeName":""}');
     let gpsWatchId = null;
     let gpsStartCoords = null;
     let totalGpsDistance = 0;
@@ -386,14 +377,12 @@
     function loadAdminSettings() {
       document.getElementById('adminEmail').value = adminSettings.adminEmail || '';
       document.getElementById('employeeName').value = adminSettings.employeeName || '';
-      document.getElementById('reimbursementRate').value = adminSettings.rate || 0.67;
     }
 
     function saveAdminSettings() {
       adminSettings = {
         adminEmail: document.getElementById('adminEmail').value,
-        employeeName: document.getElementById('employeeName').value,
-        rate: parseFloat(document.getElementById('reimbursementRate').value) || 0.67
+        employeeName: document.getElementById('employeeName').value
       };
       localStorage.setItem('admin_settings', JSON.stringify(adminSettings));
       updateSummaries();
@@ -417,10 +406,8 @@
     function updateSummaries() {
       const activeTrips = getFilteredTrips();
       const totalMiles = activeTrips.reduce((sum, t) => sum + t.distance, 0);
-      const payout = totalMiles * (adminSettings.rate || 0.67);
 
       document.getElementById('summaryTotalMiles').innerText = totalMiles.toFixed(1);
-      document.getElementById('summaryTotalPayout').innerText = `$${payout.toFixed(2)}`;
     }
 
     function sendEmailToAdmin() {
@@ -432,15 +419,13 @@
 
       const activeTrips = getFilteredTrips();
       const totalMiles = activeTrips.reduce((sum, t) => sum + t.distance, 0);
-      const payout = totalMiles * (adminSettings.rate || 0.67);
       const empName = adminSettings.employeeName || "Employee";
 
       let subject = encodeURIComponent(`Mileage Reimbursement Request - ${empName}`);
       let bodyText = `Hi Admin Team,\n\nPlease find my company mileage report details below for reimbursement processing:\n\n` +
         `Employee Name: ${empName}\n` +
         `Total Mileage: ${totalMiles.toFixed(1)} miles\n` +
-        `Reimbursement Rate: $${adminSettings.rate}/mi\n` +
-        `Total Payout Due: $${payout.toFixed(2)}\n\n` +
+        `\n` +
         `Trip Summary Breakdown:\n` +
         `----------------------------------------\n`;
 
