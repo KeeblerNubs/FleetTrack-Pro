@@ -16,6 +16,12 @@ This project builds FleetTrack Pro for Android and iOS with Capacitor.
 
 The Android workflow uses Capacitor 8 and targets Android 16 (API 36). It requests foreground location only; it does not request background location. Rebuild and install the new APK to replace an older build on your device.
 
+## Automatic PWA Updates
+
+The `Deploy FleetTrack Pro PWA` workflow publishes the `www/` app to GitHub Pages after every push to `main` or `master`. In the repository settings, open **Pages** and set the source to **GitHub Actions**. The Pages URL appears on the workflow run after deployment.
+
+Share that HTTPS URL with users. They can open it in a browser or install it from the browser menu (on iOS, use **Share** then **Add to Home Screen**). Each repository update is deployed automatically; users receive it the next time they open or refresh the PWA. Native Capacitor installs remain separate and still require an app-store update for native code changes.
+
 ## iOS TestFlight Release
 
 The iOS workflow runs when a GitHub Release is published or started manually from the Actions tab. For release builds, use a `vMAJOR.MINOR.PATCH` tag, such as `v1.0.1`; manual runs use the version in `package.json`. Each run receives a unique build number.
