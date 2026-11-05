@@ -18,7 +18,7 @@ The Android workflow uses Capacitor 8 and targets Android 16 (API 36). It reques
 
 ## Automatic PWA Updates
 
-The `Deploy FleetTrack Pro PWA` workflow publishes the `www/` app to GitHub Pages after every push to `main` or `master`. In the repository settings, open **Pages** and set the source to **GitHub Actions**. The Pages URL appears on the workflow run after deployment.
+The `Deploy FleetTrack Pro PWA` workflow publishes the `www/` app to GitHub Pages after every push to `main` or `master`. It optimizes the icon with SVGO while preserving its `viewBox`, and versions the service worker for each commit. Repeat loads use the local app cache for faster startup; each deployment gets a fresh cache. In the repository settings, open **Pages** and set the source to **GitHub Actions**. The Pages URL appears on the workflow run after deployment.
 
 Share that HTTPS URL with users. They can open it in a browser or install it from the browser menu (on iOS, use **Share** then **Add to Home Screen**). Each repository update is deployed automatically; users receive it the next time they open or refresh the PWA. Native Capacitor installs remain separate and still require an app-store update for native code changes.
 

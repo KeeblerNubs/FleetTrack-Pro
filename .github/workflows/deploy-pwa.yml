@@ -25,16 +25,25 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Version service worker for this commit
-        run: sed -i "s/BUILD_ID/${GITHUB_SHA}/" www/service-worker.js
+      - name: Optimize and prepare PWA assets
+        run: |
+          cp -R www _site
+          npx --yes svgo@4.1.0 --config=svgo.config.mjs _site/icon.svg -o _site/icon.optimized.svg
+          mv _site/icon.optimized.svg _site/icon.svg
+          sed -i "s/BUILD_ID/${GITHUB_SHA}/" _site/service-worker.js
 
       - name: Upload PWA site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: www
+          path: _site
 
       - name: Deploy PWA site
         id: deployment

@@ -28,16 +28,19 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET' || requestUrl.origin !== self.location.origin) return;
 
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (!response.ok) return response;
-        return caches.open(cacheName)
-          .then((cache) => cache.put(request, response.clone()))
-          .then(() => response);
-      })
-      .catch(async () => {
-        return (await caches.match(request)) || caches.match('./index.html');
-      })
-  );
+  event.respondWith((async () => {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) return cachedResponse;
+
+    try {
+      const response = await fetch(request);
+      if (!response.ok) return response;
+
+      const cache = await caches.open(cacheName);
+      await cache.put(request, response.clone());
+      return response;
+    } catch {
+      return (await caches.match('./index.html')) || Response.error();
+    }
+  })());
 });
