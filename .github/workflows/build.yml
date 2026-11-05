@@ -16,25 +16,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Install Dependencies & Setup Capacitor
         run: |
-          npm init -y
-          npm install @capacitor/core@5.0.0 @capacitor/cli@5.0.0 @capacitor/android@5.0.0
-          npx cap init "FleetTrack Pro" "com.axium.mileage" --web-dir www
+          npm install
           npx cap add android
 
-      - name: Inject Background Location Permissions into AndroidManifest.xml
+      - name: Inject Foreground Location Permissions into AndroidManifest.xml
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          PERMISSIONS="<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />\n    <uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />\n    <uses-permission android:name=\"android.permission.ACCESS_BACKGROUND_LOCATION\" />"
+          PERMISSIONS="<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />\n    <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />"
           sed -i "s|</manifest>|    $PERMISSIONS\n</manifest>|" $MANIFEST_PATH
 
       - name: Sync Capacitor

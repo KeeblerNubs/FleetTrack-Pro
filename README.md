@@ -14,6 +14,8 @@ This project builds FleetTrack Pro for Android and iOS with Capacitor.
 3. Go to the **Actions** tab on GitHub to watch your APK build automatically!
 4. Download the `FleetTrackPro-Android-APK` artifact once finished and install it directly on your Android phone.
 
+The Android workflow uses Capacitor 8 and targets Android 16 (API 36). It requests foreground location only; it does not request background location. Rebuild and install the new APK to replace an older build on your device.
+
 ## iOS TestFlight Release
 
 The iOS workflow runs when a GitHub Release is published or started manually from the Actions tab. For release builds, use a `vMAJOR.MINOR.PATCH` tag, such as `v1.0.1`; manual runs use the version in `package.json`. Each run receives a unique build number.
