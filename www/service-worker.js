@@ -1,6 +1,11 @@
 const buildId = 'BUILD_ID';
 const cacheName = `fleettrack-${buildId}`;
-const appShell = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+const appShell = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './icon.svg',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

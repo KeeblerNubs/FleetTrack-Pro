@@ -38,6 +38,18 @@ jobs:
           cp -R www _site
           npx --yes svgo@4.1.0 --config=svgo.config.mjs _site/icon.svg -o _site/icon.optimized.svg
           mv _site/icon.optimized.svg _site/icon.svg
+          for size in 192 512; do
+            npx --yes sharp-cli@6.1.0 \
+              --input _site/icon.svg \
+              --output "_site/icon-${size}.png" \
+              --format png \
+              resize "$size" "$size"
+          done
+          npx --yes sharp-cli@6.1.0 \
+            --input _site/icon.svg \
+            --output _site/apple-touch-icon.png \
+            --format png \
+            resize 180 180
           sed -i "s/BUILD_ID/${GITHUB_SHA}/" _site/service-worker.js
 
       - name: Upload PWA site
