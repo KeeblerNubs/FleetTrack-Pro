@@ -1,11 +1,11 @@
-# FleetTrack Pro - Capacitor Mobile App
+# FleetTrack Pro - Android App and Installable PWA
 
-This project builds FleetTrack Pro for Android and iOS with Capacitor.
+This project provides an Android APK and a PWA for Android and iOS users. The PWA is distributed through GitHub Pages; native iOS store packaging is not configured.
 
 ## Contents:
 1. `www/index.html` - The complete mobile-first HTML/PWA app with GPS live tracking, manual entry, and direct admin export.
 2. `.github/workflows/build.yml` - GitHub Actions workflow for an Android APK.
-3. `.github/workflows/ios-testflight.yml` - macOS workflow for signed iOS builds and TestFlight uploads.
+3. `.github/workflows/deploy-pwa.yml` - GitHub Actions workflow for publishing the PWA to GitHub Pages.
 4. `package.json` & `capacitor.config.json` - Capacitor project configuration files.
 
 ## Quick Start (GitHub Actions Cloud Build):
@@ -22,18 +22,4 @@ The `Deploy FleetTrack Pro PWA` workflow publishes the `www/` app to GitHub Page
 
 Share that HTTPS URL with users. They can open it in a browser or install it from the browser menu (on iOS, use **Share** then **Add to Home Screen**). Each repository update is deployed automatically; users receive it the next time they open or refresh the PWA. Native Capacitor installs remain separate and still require an app-store update for native code changes.
 
-## iOS TestFlight Release
 
-The iOS workflow runs when a GitHub Release is published or started manually from the Actions tab. For release builds, use a `vMAJOR.MINOR.PATCH` tag, such as `v1.0.1`; manual runs use the version in `package.json`. Each run receives a unique build number.
-
-Before running it, create an App Store Connect app record with bundle ID `com.axium.mileage`, an Apple Distribution certificate, and an App Store provisioning profile for that bundle ID. Add these repository Actions secrets:
-
-- `IOS_DISTRIBUTION_CERTIFICATE_BASE64` - base64-encoded `.p12` distribution certificate.
-- `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD` - password used to export the certificate.
-- `IOS_PROVISIONING_PROFILE_BASE64` - base64-encoded App Store provisioning profile.
-- `IOS_TEAM_ID` - Apple Developer team ID.
-- `APP_STORE_CONNECT_KEY_ID` - App Store Connect API key ID.
-- `APP_STORE_CONNECT_ISSUER_ID` - App Store Connect API issuer ID.
-- `APP_STORE_CONNECT_PRIVATE_KEY` - full contents of the API key `.p8` file.
-
-The workflow uploads the signed build to TestFlight and saves the IPA as a workflow artifact. TestFlight distribution and any public App Store submission or review are managed in App Store Connect.
