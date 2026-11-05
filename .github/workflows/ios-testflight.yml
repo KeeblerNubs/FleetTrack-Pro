@@ -1,0 +1,139 @@
+name: Release iOS to TestFlight
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install dependencies and generate iOS project
+        run: |
+          npm install
+          npx cap add ios
+          npx cap sync ios
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'FleetTrack Pro uses your location while you track a trip.'" ios/App/App/Info.plist
+
+      - name: Import Apple Distribution certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+
+      - name: Install App Store provisioning profile
+        env:
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          PROFILE_PLIST="$RUNNER_TEMP/profile.plist"
+          printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$PROFILE_PLIST")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$PROFILE_PLIST")
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "IOS_PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+
+      - name: Set release version
+        run: |
+          APP_VERSION="${GITHUB_REF_NAME#v}"
+          if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            APP_VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "IOS_APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "IOS_BUILD_NUMBER=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+
+      - name: Archive iOS app
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          mkdir -p build
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/FleetTrackPro.xcarchive \
+            DEVELOPMENT_TEAM="$IOS_TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY='Apple Distribution' \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_NAME" \
+            MARKETING_VERSION="$IOS_APP_VERSION" \
+            CURRENT_PROJECT_VERSION="$IOS_BUILD_NUMBER" \
+            archive
+
+      - name: Export App Store IPA
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          export EXPORT_OPTIONS_PATH="$RUNNER_TEMP/ExportOptions.plist"
+          export IOS_PROFILE_NAME
+          export IOS_TEAM_ID
+          python3 - <<'PY'
+          import os
+          import plistlib
+
+          options = {
+              "method": "app-store-connect",
+              "signingStyle": "manual",
+              "teamID": os.environ["IOS_TEAM_ID"],
+              "provisioningProfiles": {
+                  "com.axium.mileage": os.environ["IOS_PROFILE_NAME"]
+              },
+          }
+          with open(os.environ["EXPORT_OPTIONS_PATH"], "wb") as export_options:
+              plistlib.dump(options, export_options)
+          PY
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/FleetTrackPro.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist "$EXPORT_OPTIONS_PATH"
+
+      - name: Install TestFlight uploader
+        run: gem install fastlane --no-document
+
+      - name: Upload build to TestFlight
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          export APP_STORE_CONNECT_API_KEY_PATH="$RUNNER_TEMP/app-store-connect-api-key.json"
+          ruby -rjson -e 'puts JSON.generate({"key_id" => ENV.fetch("APP_STORE_CONNECT_KEY_ID"), "issuer_id" => ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"), "key" => ENV.fetch("APP_STORE_CONNECT_PRIVATE_KEY"), "in_house" => false})' > "$APP_STORE_CONNECT_API_KEY_PATH"
+          IPA_PATH=$(find build/export -maxdepth 1 -name '*.ipa' -print -quit)
+          if [[ -z "$IPA_PATH" ]]; then
+            echo "Xcode did not export an IPA." >&2
+            exit 1
+          fi
+          fastlane pilot upload \
+            --ipa "$IPA_PATH" \
+            --api_key_path "$APP_STORE_CONNECT_API_KEY_PATH" \
+            --skip_waiting_for_build_processing true
+
+      - name: Save IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FleetTrackPro-iOS-IPA
+          path: build/export/*.ipa
+          if-no-files-found: error
+          retention-days: 14
