@@ -86,6 +86,8 @@ jobs:
           ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/fleettrack-release.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           export ANDROID_KEYSTORE_PATH
+          export ANDROID_VERSION_CODE="$GITHUB_RUN_NUMBER"
+          export ANDROID_VERSION_NAME="${GITHUB_REF_NAME#v}"
           cd android
           chmod +x gradlew
           ./gradlew -I ../scripts/release-signing.gradle assembleRelease

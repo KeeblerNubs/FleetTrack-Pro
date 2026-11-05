@@ -21,13 +21,23 @@ The Android workflow uses Capacitor 8 and targets Android 16 (API 36). It reques
 
 The `Deploy FleetTrack Pro PWA` workflow publishes the `www/` app to GitHub Pages after every push to `main` or `master`. It optimizes the icon with SVGO while preserving its `viewBox`, and versions the service worker for each commit. Repeat loads use the local app cache for faster startup; each deployment gets a fresh cache. In the repository settings, open **Pages** and set the source to **GitHub Actions**. The Pages URL appears on the workflow run after deployment.
 
-Share that HTTPS URL with users. They can open it in a browser or install it from the browser menu (on iOS, use **Share** then **Add to Home Screen**). Each repository update is deployed automatically; users receive it the next time they open or refresh the PWA. Native Capacitor installs remain separate and still require an app-store update for native code changes.
+### Install Instructions
+
+Then install from [the FleetTrack Pro page](https://keeblernubs.github.io/FleetTrack-Pro/): in Android Chrome, choose **⋮ → Install app**; on iPhone Safari, choose **Share → Add to Home Screen**.
+
+Each repository update is deployed automatically; users receive it the next time they open or refresh the PWA. Native Capacitor installs remain separate and still require an app-store update for native code changes.
 
 ## GitHub Releases
 
 Publishing a GitHub Release attaches `FleetTrackPro-PWA.zip`. A signed Android APK is also attached when all four Android signing secrets are configured in repository Actions settings: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The PWA asset publishes even when the APK signing secrets are absent.
 
-Create an Android keystore once with the JDK's `keytool`, then store the file and its credentials as the four repository Actions secrets above. On Windows, encode the keystore for `ANDROID_KEYSTORE_BASE64` with:
+Create an Android keystore once with the JDK's `keytool`, then store the file and its credentials as the four repository Actions secrets above. Keep the keystore and passwords safe; the same key is required for every APK update.
+
+```powershell
+keytool -genkeypair -v -keystore fleettrack-release.jks -alias fleettrack -keyalg RSA -keysize 2048 -validity 10000
+```
+
+On Windows, encode the keystore for `ANDROID_KEYSTORE_BASE64` with:
 
 ```powershell
 [Convert]::ToBase64String([IO.File]::ReadAllBytes("fleettrack-release.jks"))

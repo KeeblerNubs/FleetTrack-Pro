@@ -9,6 +9,14 @@ gradle.projectsEvaluated {
         throw new GradleException('Android Gradle extension was not found.')
     }
 
+    def versionCode = System.getenv('ANDROID_VERSION_CODE')
+    def versionName = System.getenv('ANDROID_VERSION_NAME')
+    if (!versionCode || !versionName) {
+        throw new GradleException('Android release version environment variables are required.')
+    }
+    android.defaultConfig.versionCode = versionCode.toInteger()
+    android.defaultConfig.versionName = versionName
+
     def signingConfig = android.signingConfigs.maybeCreate('releaseFromEnvironment')
     signingConfig.storeFile = appProject.file(System.getenv('ANDROID_KEYSTORE_PATH'))
     signingConfig.storePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
