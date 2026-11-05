@@ -24,10 +24,10 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Dependencies & Setup Capacitor
+- name: Install Dependencies & Setup Capacitor
         run: |
           npm init -y
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+          npm install @capacitor/core@5.0.0 @capacitor/cli@5.0.0 @capacitor/android@5.0.0
           npx cap init "FleetTrack Pro" "com.axium.mileage" --web-dir www
           npx cap add android
 
