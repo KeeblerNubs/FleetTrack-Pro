@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "build": "npx cap sync android",
+    "ios:sync": "npx cap sync ios",
     "open": "npx cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^5.0.0",
     "@capacitor/cli": "^5.0.0",
-    "@capacitor/core": "^5.0.0"
+    "@capacitor/core": "^5.0.0",
+    "@capacitor/ios": "^5.0.0"
   }
 }
