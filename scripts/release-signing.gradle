@@ -1,0 +1,18 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.findProject(':app')
+    if (appProject == null) {
+        throw new GradleException('Android app project :app was not found.')
+    }
+
+    def android = appProject.extensions.findByName('android')
+    if (android == null) {
+        throw new GradleException('Android Gradle extension was not found.')
+    }
+
+    def signingConfig = android.signingConfigs.maybeCreate('releaseFromEnvironment')
+    signingConfig.storeFile = appProject.file(System.getenv('ANDROID_KEYSTORE_PATH'))
+    signingConfig.storePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
+    signingConfig.keyAlias = System.getenv('ANDROID_KEY_ALIAS')
+    signingConfig.keyPassword = System.getenv('ANDROID_KEY_PASSWORD')
+    android.buildTypes.getByName('release').signingConfig = signingConfig
+}

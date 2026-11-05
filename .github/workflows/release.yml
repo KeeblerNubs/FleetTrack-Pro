@@ -1,0 +1,99 @@
+name: Publish FleetTrack Pro Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Prepare PWA release bundle
+        run: |
+          cp -R www _site
+          npx --yes svgo@4.1.0 --config=svgo.config.mjs _site/icon.svg -o _site/icon.optimized.svg
+          mv _site/icon.optimized.svg _site/icon.svg
+          for size in 192 512; do
+            npx --yes sharp-cli@6.1.0 \
+              --input _site/icon.svg \
+              --output "_site/icon-${size}.png" \
+              --format png \
+              resize "$size" "$size"
+          done
+          npx --yes sharp-cli@6.1.0 \
+            --input _site/icon.svg \
+            --output _site/apple-touch-icon.png \
+            --format png \
+            resize 180 180
+          sed -i "s/BUILD_ID/${GITHUB_SHA}/" _site/service-worker.js
+          mkdir -p release
+          (cd _site && zip -qr ../release/FleetTrackPro-PWA.zip .)
+
+      - name: Attach PWA bundle to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/FleetTrackPro-PWA.zip
+          fail_on_unmatched_files: true
+
+      - name: Check Android signing configuration
+        id: android-signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Android APK skipped. Configure all ANDROID_KEYSTORE_* secrets to publish a signed APK."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Java
+        if: steps.android-signing.outputs.available == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Build signed Android APK
+        if: steps.android-signing.outputs.available == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          npm install
+          npx cap add android
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          PERMISSIONS="<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />\n    <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />"
+          sed -i "s|</manifest>|    $PERMISSIONS\n</manifest>|" "$MANIFEST_PATH"
+          npx cap sync android
+          ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/fleettrack-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          export ANDROID_KEYSTORE_PATH
+          cd android
+          chmod +x gradlew
+          ./gradlew -I ../scripts/release-signing.gradle assembleRelease
+          mkdir -p ../release
+          cp app/build/outputs/apk/release/app-release.apk ../release/FleetTrackPro-Android.apk
+
+      - name: Attach signed Android APK to GitHub Release
+        if: steps.android-signing.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" release/FleetTrackPro-Android.apk --clobber
