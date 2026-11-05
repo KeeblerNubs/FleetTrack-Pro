@@ -3,12 +3,14 @@
 This project provides an Android APK, a PWA for Android and iOS users, and optional store release workflows. Android App Bundles can be sent to Google Play internal testing, and signed iOS builds can be uploaded to TestFlight when store credentials are configured. Public store launches still require console setup and review.
 
 ## Contents:
-1. `www/index.html` - The complete mobile-first HTML/PWA app with GPS live tracking, manual entry, and direct admin export.
-2. `.github/workflows/build.yml` - GitHub Actions workflow for an Android APK.
-3. `.github/workflows/deploy-pwa.yml` - GitHub Actions workflow for publishing the PWA to GitHub Pages.
-4. `.github/workflows/release.yml` - GitHub Release assets, signed Android APK/App Bundle, and optional Google Play internal upload.
-5. `.github/workflows/ios-release.yml` - Signed iOS archive, TestFlight upload, and IPA release asset.
-6. `package.json` & `capacitor.config.json` - Capacitor project configuration files.
+1. `www/index.html` - The mobile-first HTML/PWA app with GPS tracking, trip history, and report export.
+2. `www/privacy.html` - Public privacy policy for the app and PWA.
+3. `STORE_SUBMISSION.md` - Store listing copy, draft disclosures, and screenshot checklist.
+4. `.github/workflows/build.yml` - GitHub Actions workflow for an Android APK.
+5. `.github/workflows/deploy-pwa.yml` - GitHub Actions workflow for publishing the PWA to GitHub Pages.
+6. `.github/workflows/release.yml` - GitHub Release assets, signed Android APK/App Bundle, and optional Google Play internal upload.
+7. `.github/workflows/ios-release.yml` - Signed iOS archive, TestFlight upload, and IPA release asset.
+8. `package.json` & `capacitor.config.json` - Capacitor project configuration files.
 
 ## Quick Start (GitHub Actions Cloud Build):
 1. Create a new private/public repository on GitHub.
@@ -52,6 +54,6 @@ For Google Play, create the app in Play Console with application ID `com.axium.m
 
 For Apple, create the app record with bundle ID `com.axium.mileage` and configure an Apple Distribution certificate, an App Store provisioning profile, and an App Store Connect API key. Add these Actions secrets: `IOS_DISTRIBUTION_CERTIFICATE_BASE64`, `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `IOS_TEAM_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, and `APP_STORE_CONNECT_PRIVATE_KEY`. The workflow uploads the IPA to TestFlight and attaches it to the GitHub Release; complete the App Store listing and submit the build for App Review in App Store Connect.
 
-Use a new semantic version tag for each store release, such as `v2.0.1`. Existing release tags such as `Release2` are not valid store version tags. Before submitting either store listing, provide the required privacy policy, support contact, screenshots, and store disclosures. The app uses foreground location and stores trip/profile data in browser/app local storage, so review those disclosures for accuracy.
+Use a new semantic version tag for each store release, such as `v2.0.1`. Existing release tags such as `Release2` are not valid store version tags. The privacy policy is published at `www/privacy.html`, and listing/disclosure drafts are in `STORE_SUBMISSION.md`. Capture real device screenshots and verify the store questionnaires against the final app before submission. The app uses foreground location and stores trip/profile data in browser/app local storage, so review those disclosures for accuracy.
 
 
